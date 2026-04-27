@@ -92,6 +92,10 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, FoodActivity::class.java))
                     false
                 }
+                R.id.nav_habits -> {
+                    startActivity(Intent(this, HabitsActivity::class.java))
+                    false
+                }
                 else -> false
             }
         }

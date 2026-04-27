@@ -16,4 +16,8 @@
         android:id="@+id/nav_food"
         android:icon="@android:drawable/ic_menu_agenda"
         android:title="Comidas"/>
+    <item
+        android:id="@+id/nav_habits"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="Rutina"/>
 </menu>

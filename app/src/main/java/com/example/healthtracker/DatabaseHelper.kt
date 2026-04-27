@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "health_tracker.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
 
         // Blood Pressure Table
         const val TABLE_BLOOD_PRESSURE = "blood_pressure"
@@ -35,6 +35,18 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val F_CALORIES = "calories"
         const val F_DATE = "date"
         const val F_MEAL_TYPE = "meal_type" // breakfast, lunch, dinner, snack
+
+        //habits
+        const val TABLE_HABITS = "habits"
+        const val H_ID = "id"
+        const val H_NAME = "name"
+        const val H_ACTIVE = "is_active"
+
+        const val TABLE_HABIT_LOGS = "habit_logs"
+        const val HL_ID = "id"
+        const val HL_HABIT_ID = "habit_id"
+        const val HL_DATE = "date"
+        const val HL_COMPLETED = "completed"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -66,12 +78,32 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 $F_MEAL_TYPE TEXT NOT NULL
             )
         """)
+
+        db.execSQL("""
+            CREATE TABLE $TABLE_HABITS (
+                $H_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $H_NAME TEXT NOT NULL,
+                $H_ACTIVE INTEGER DEFAULT 1
+            )
+       """)
+
+       db.execSQL("""
+            CREATE TABLE $TABLE_HABIT_LOGS (
+                $HL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $HL_HABIT_ID INTEGER NOT NULL,
+                $HL_DATE TEXT NOT NULL,
+                $HL_COMPLETED INTEGER DEFAULT 0,
+                FOREIGN KEY ($HL_HABIT_ID) REFERENCES $TABLE_HABITS($H_ID) ON DELETE CASCADE
+            )
+        """)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $TABLE_BLOOD_PRESSURE")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_WEIGHT")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_FOOD")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_HABITS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_HABIT_LOGS")
         onCreate(db)
     }
 
@@ -291,6 +323,94 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     fun deleteFood(id: Int) {
         writableDatabase.delete(TABLE_FOOD, "$F_ID = ?", arrayOf(id.toString()))
     }
+
+    // habits
+
+    fun insertHabit(name: String): Long {
+        val values = ContentValues().apply {
+            put(H_NAME, name)
+            put(H_ACTIVE, 1)
+        }
+        return writableDatabase.insert(TABLE_HABITS, null, values)
+    }
+
+    fun getActiveHabits(): List<HabitRecord> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_HABITS WHERE $H_ACTIVE = 1 ORDER BY $H_ID ASC", null
+        )
+        val list = mutableListOf<HabitRecord>()
+        while (cursor.moveToNext()) {
+            list.add(HabitRecord(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(H_ID)),
+                name = cursor.getString(cursor.getColumnIndexOrThrow(H_NAME))
+            ))
+        }
+        cursor.close()
+        return list
+    }
+
+    fun renameHabit(id: Int, newName: String) {
+        val values = ContentValues().apply { put(H_NAME, newName) }
+        writableDatabase.update(TABLE_HABITS, values, "$H_ID = ?", arrayOf(id.toString()))
+    }
+
+    fun deleteHabit(id: Int) {
+        writableDatabase.delete(TABLE_HABIT_LOGS, "$HL_HABIT_ID = ?", arrayOf(id.toString()))
+        writableDatabase.delete(TABLE_HABITS, "$H_ID = ?", arrayOf(id.toString()))
+    }
+
+    // ─── Habit Logs ───────────────────────────────────────────────────────────
+
+    fun setHabitLog(habitId: Int, date: String, completed: Boolean) {
+        val db = writableDatabase
+        // Upsert: delete existing then insert
+        db.delete(TABLE_HABIT_LOGS,
+            "$HL_HABIT_ID = ? AND $HL_DATE = ?",
+            arrayOf(habitId.toString(), date))
+        val values = ContentValues().apply {
+            put(HL_HABIT_ID, habitId)
+            put(HL_DATE, date)
+            put(HL_COMPLETED, if (completed) 1 else 0)
+        }
+        db.insert(TABLE_HABIT_LOGS, null, values)
+    }
+
+    fun getHabitLogsForDate(date: String): List<HabitLogRecord> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_HABIT_LOGS WHERE $HL_DATE = ?", arrayOf(date)
+        )
+        val list = mutableListOf<HabitLogRecord>()
+        while (cursor.moveToNext()) {
+            list.add(HabitLogRecord(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(HL_ID)),
+                habitId = cursor.getInt(cursor.getColumnIndexOrThrow(HL_HABIT_ID)),
+                date = cursor.getString(cursor.getColumnIndexOrThrow(HL_DATE)),
+                completed = cursor.getInt(cursor.getColumnIndexOrThrow(HL_COMPLETED)) == 1
+            ))
+        }
+        cursor.close()
+        return list
+    }
+
+    // Returns map of date -> Pair(completedCount, totalHabits) for a given month
+    fun getMonthCompletionMap(year: Int, month: Int): Map<String, Pair<Int, Int>> {
+        val prefix = "%04d-%02d".format(year, month)
+        val totalHabits = getActiveHabits().size
+        val cursor = readableDatabase.rawQuery(
+            """SELECT $HL_DATE, SUM($HL_COMPLETED) as done
+               FROM $TABLE_HABIT_LOGS
+               WHERE $HL_DATE LIKE '$prefix%'
+               GROUP BY $HL_DATE""", null
+        )
+        val map = mutableMapOf<String, Pair<Int, Int>>()
+        while (cursor.moveToNext()) {
+            val date = cursor.getString(0)
+            val done = cursor.getInt(1)
+            map[date] = Pair(done, totalHabits)
+        }
+        cursor.close()
+        return map
+    }
 }
 
 // ─── Data Classes ─────────────────────────────────────────────────────────────
@@ -316,4 +436,16 @@ data class FoodRecord(
     val calories: Int,
     val date: String,
     val mealType: String
+)
+
+data class HabitRecord(
+    val id: Int,
+    val name: String
+)
+
+data class HabitLogRecord(
+    val id: Int,
+    val habitId: Int,
+    val date: String,
+    val completed: Boolean
 )
