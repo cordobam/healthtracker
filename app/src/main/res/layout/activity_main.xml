@@ -38,203 +38,33 @@
                 android:layout_marginTop="2dp"/>
         </LinearLayout>
 
-        <ScrollView
+        <!-- Reemplaza el ScrollView completo -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:padding="16dp">
+            android:orientation="vertical"
+            android:paddingTop="16dp">
 
-            <LinearLayout
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerCards"
                 android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:paddingHorizontal="24dp"
+                android:clipToPadding="false"
+                android:clipChildren="false"/>
+
+            <!-- Indicadores de puntos -->
+            <LinearLayout
+                android:id="@+id/dotsContainer"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                />
 
-                <!-- BP Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardElevation="4dp"
-                    app:cardCornerRadius="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="❤️  Presión Arterial — Promedio semanal"
-                            android:textSize="13sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginTop="8dp">
-
-                            <TextView
-                                android:id="@+id/tvBpAvgSystolic"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="--"
-                                android:textSize="42sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="/"
-                                android:textSize="32sp"
-                                android:textColor="@color/text_secondary"
-                                android:layout_marginHorizontal="4dp"/>
-
-                            <TextView
-                                android:id="@+id/tvBpAvgDiastolic"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="--"
-                                android:textSize="42sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/primary"/>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text=" mmHg"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_secondary"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvBpStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sin datos"
-                            android:textSize="14sp"
-                            android:layout_marginTop="4dp"/>
-
-                        <TextView
-                            android:id="@+id/tvBpReadingsCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Weight Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardWeight"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardElevation="4dp"
-                    app:cardCornerRadius="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⚖️  Peso — Último registro"
-                            android:textSize="13sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:id="@+id/tvWeightCurrent"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="-- kg"
-                            android:textSize="42sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary"
-                            android:layout_marginTop="8dp"/>
-
-                        <TextView
-                            android:id="@+id/tvWeightChange"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sin datos"
-                            android:textSize="14sp"
-                            android:layout_marginTop="4dp"/>
-
-                        <TextView
-                            android:id="@+id/tvWeightStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Calories Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardFood"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardElevation="4dp"
-                    app:cardCornerRadius="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🍽️  Calorías — Hoy"
-                            android:textSize="13sp"
-                            android:textColor="@color/text_secondary"/>
-
-                        <TextView
-                            android:id="@+id/tvCaloriesToday"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0 kcal"
-                            android:textSize="42sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary"
-                            android:layout_marginTop="8dp"/>
-
-                        <TextView
-                            android:id="@+id/tvCaloriesAvg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textSize="14sp"
-                            android:layout_marginTop="4dp"/>
-
-                        <TextView
-                            android:id="@+id/tvCaloriesStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-            </LinearLayout>
-        </ScrollView>
+        </LinearLayout>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigation"
