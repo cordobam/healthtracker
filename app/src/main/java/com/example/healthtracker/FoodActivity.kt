@@ -121,6 +121,7 @@ class FoodActivity : AppCompatActivity() {
                 R.id.nav_bp -> { startActivity(Intent(this, BloodPressureActivity::class.java)); false }
                 R.id.nav_weight -> { startActivity(Intent(this, WeightActivity::class.java)); false }
                 R.id.nav_food -> true
+                R.id.nav_habits -> { startActivity(Intent(this, HabitsActivity::class.java)); false }
                 else -> false
             }
         }
