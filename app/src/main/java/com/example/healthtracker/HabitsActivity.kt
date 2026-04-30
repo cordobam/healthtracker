@@ -47,11 +47,11 @@ class HabitsActivity : AppCompatActivity() {
         rvHabits.layoutManager = LinearLayoutManager(this)
 
         btnPrevMonth.setOnClickListener {
-            currentCalendar.add(Calendar.MONTH, -1)
+            currentCalendar.add(Calendar.DAY_OF_MONTH, -7)
             refreshCalendar()
         }
         btnNextMonth.setOnClickListener {
-            currentCalendar.add(Calendar.MONTH, 1)
+            currentCalendar.add(Calendar.DAY_OF_MONTH, 7)
             refreshCalendar()
         }
 
@@ -73,23 +73,25 @@ class HabitsActivity : AppCompatActivity() {
     // ── Calendar ──────────────────────────────────────────────────────────────
 
     private fun refreshCalendar() {
-        val sdf = SimpleDateFormat("MMMM yyyy", Locale("es", "AR"))
-        tvMonthYear.text = sdf.format(currentCalendar.time).replaceFirstChar { it.uppercase() }
+        val sdf = SimpleDateFormat("d MMM", Locale("es", "AR"))
+        val cal = currentCalendar.clone() as Calendar
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        val startLabel = sdf.format(cal.time)
+        cal.add(Calendar.DAY_OF_MONTH, 6)
+        val endLabel = sdf.format(cal.time)
+        tvMonthYear.text = "$startLabel — $endLabel"
 
         val days = buildCalendarDays()
-        val completionMap = db.getMonthCompletionMap(
-            currentCalendar.get(Calendar.YEAR),
-            currentCalendar.get(Calendar.MONTH) + 1
-        )
+        val year = currentCalendar.get(Calendar.YEAR)
+        val month = currentCalendar.get(Calendar.MONTH) + 1
+        val completionMap = db.getMonthCompletionMap(year, month)
         val totalHabits = db.getActiveHabits().size
 
         val adapter = CalendarAdapter(days, selectedDate, completionMap, totalHabits) { date ->
             selectedDate = date
-            val dayNum = date.split("-")[2].toInt()
             val sdfDay = SimpleDateFormat("EEEE d 'de' MMMM", Locale("es", "AR"))
-            val cal = currentCalendar.clone() as Calendar
-            cal.set(Calendar.DAY_OF_MONTH, dayNum)
-            tvSelectedDay.text = sdfDay.format(cal.time).replaceFirstChar { it.uppercase() }
+            tvSelectedDay.text = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .parse(date)?.let { sdfDay.format(it) }?.replaceFirstChar { it.uppercase() } ?: date
             loadHabitsForDay(date)
             refreshCalendar()
         }
@@ -98,19 +100,15 @@ class HabitsActivity : AppCompatActivity() {
 
     private fun buildCalendarDays(): List<String?> {
         val days = mutableListOf<String?>()
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+        // Busca el lunes de la semana actual
         val cal = currentCalendar.clone() as Calendar
-        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
 
-        // Offset: Monday = 0
-        var dayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 2
-        if (dayOfWeek < 0) dayOfWeek = 6
-        repeat(dayOfWeek) { days.add(null) }
-
-        val year = currentCalendar.get(Calendar.YEAR)
-        val month = currentCalendar.get(Calendar.MONTH) + 1
-        val maxDay = currentCalendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        for (d in 1..maxDay) {
-            days.add("%04d-%02d-%02d".format(year, month, d))
+        repeat(7) {
+            days.add(sdf.format(cal.time))
+            cal.add(Calendar.DAY_OF_MONTH, 1)
         }
         return days
     }
@@ -254,7 +252,7 @@ class CalendarAdapter(
 ) : RecyclerView.Adapter<CalendarAdapter.ViewHolder>() {
 
     // Header labels
-    private val headers = listOf("L", "M", "M", "J", "V", "S", "D")
+    //private val headers = listOf("L", "M", "M", "J", "V", "S", "D")
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvDay: TextView = view.findViewById(R.id.tvCalendarDay)
@@ -270,7 +268,7 @@ class CalendarAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // First 7 positions are headers
-        if (position < 7) {
+        /*if (position < 7) {
             holder.tvDay.text = headers[position]
             holder.tvDay.setTextColor(holder.itemView.context.getColor(R.color.text_secondary))
             holder.tvDay.textSize = 11f
@@ -278,9 +276,9 @@ class CalendarAdapter(
             holder.container.setBackgroundResource(0)
             holder.container.isClickable = false
             return
-        }
+        }*/
 
-        val date = days[position - 7]
+        val date = days[position]
         if (date == null) {
             holder.tvDay.text = ""
             holder.tvCount.visibility = View.GONE
@@ -333,7 +331,7 @@ class CalendarAdapter(
         holder.container.setOnClickListener { onDayClick(date) }
     }
 
-    override fun getItemCount() = days.size + 7 // +7 for headers
+    override fun getItemCount() = days.size
 }
 
 // ── Habit Day Adapter ─────────────────────────────────────────────────────────

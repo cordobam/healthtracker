@@ -9,7 +9,7 @@
     <!-- Header -->
     <LinearLayout
         android:id="@+id/header"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@color/primary"
@@ -29,7 +29,6 @@
             android:textSize="20sp"
             android:textStyle="bold"/>
 
-        <!-- Month navigation -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -43,8 +42,8 @@
                 android:layout_height="36dp"
                 android:src="@android:drawable/ic_media_previous"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Mes anterior"
-                android:tint="@android:color/white"/>
+                android:contentDescription="Semana anterior"
+                app:tint="@android:color/white" />
 
             <TextView
                 android:id="@+id/tvMonthYear"
@@ -52,7 +51,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Abril 2025"
+                android:text="28 Abr — 4 May"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"/>
@@ -63,25 +62,60 @@
                 android:layout_height="36dp"
                 android:src="@android:drawable/ic_media_next"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Mes siguiente"
-                android:tint="@android:color/white"/>
+                android:contentDescription="Semana siguiente"
+                app:tint="@android:color/white" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Calendar -->
+    <!-- Labels L M M J V S D -->
+    <LinearLayout
+        android:id="@+id/weekDayHeaders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="L" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="M" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="M" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="J" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="V" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="S" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center"
+            android:text="D" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+    </LinearLayout>
+
+    <!-- Calendar grid — solo 7 celdas -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCalendar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="8dp"
-        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintTop_toBottomOf="@id/weekDayHeaders"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Divider -->
     <View
         android:id="@+id/divider"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#E0E0E0"
         android:layout_marginHorizontal="16dp"
@@ -89,12 +123,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Selected day -->
+    <!-- Día seleccionado -->
     <TextView
         android:id="@+id/tvSelectedDay"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp"
+        android:paddingStart="16dp"
         android:text="Hoy"
         android:textSize="15sp"
         android:textStyle="bold"
@@ -103,10 +138,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Habits list -->
+    <!-- Lista de hábitos -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvHabits"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:paddingHorizontal="8dp"
         app:layout_constraintTop_toBottomOf="@id/tvSelectedDay"
@@ -114,10 +149,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Empty -->
+    <!-- Empty state -->
     <TextView
         android:id="@+id/tvNoHabits"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:gravity="center"
         android:text="No tenés hábitos configurados.\nTocá ＋ para agregar hasta 6."
@@ -132,22 +167,23 @@
     <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:menu="@menu/bottom_nav_menu"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- FAB -->
+    <!-- FAB — anclado arriba del BottomNav -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabManageHabits"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:contentDescription="Administrar hábitos"
         app:srcCompat="@android:drawable/ic_input_add"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
