@@ -23,6 +23,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvGreeting: TextView
     private lateinit var tvDate: TextView
 
+    private lateinit var viewPagerHistorical: ViewPager2
+
+    private lateinit var dotsContainerHistorical: LinearLayout
+
     private val cards = mutableListOf<DashboardCard>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +38,8 @@ class MainActivity : AppCompatActivity() {
         dotsContainer = findViewById(R.id.dotsContainer)
         tvGreeting = findViewById(R.id.tvGreeting)
         tvDate = findViewById(R.id.tvDate)
+        viewPagerHistorical = findViewById(R.id.viewPagerHistorical)
+        dotsContainerHistorical = findViewById(R.id.dotsContainerHistorical)
 
         setupNavigation()
         setGreeting()
@@ -43,6 +49,8 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         buildCards()
         setupCarousel()
+        buildHistoricalCards()
+        setupHistoricalCarousel()
     }
 
     // ── Builds card data from DB ──────────────────────────────────────────────
@@ -157,6 +165,108 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private val historicalCards = mutableListOf<DashboardCard>()
+    private fun buildHistoricalCards() {
+        historicalCards.clear()
+
+        // Card 1 — Blood Pressure histórico
+        val bpAvg = db.getAvgBloodPressureAllTime()
+        val bpCount = db.getBloodPressureCount()
+        historicalCards.add(if (bpAvg != null) {
+            val sys = bpAvg.first.toInt()
+            val dia = bpAvg.second.toInt()
+            val (status, _) = classifyBloodPressure(sys, dia)
+            DashboardCard(
+                icon = "❤️",
+                title = "Presión Arterial — histórico",
+                main = "$sys/$dia",
+                mainSuffix = " mmHg",
+                sub = status,
+                detail = "$bpCount mediciones en total",
+                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+            )
+        } else {
+            DashboardCard(
+                icon = "❤️",
+                title = "Presión Arterial",
+                main = "--/--",
+                mainSuffix = "",
+                sub = "Sin registros",
+                detail = "Tocá para registrar",
+                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+            )
+        })
+
+        // Card 2 — Weight histórico
+        val stats = db.getWeightAllTimeStats()
+        historicalCards.add(if (stats != null) {
+            val status = when {
+                stats.count >= 10 -> "Suficientes datos ✓"
+                stats.count >= 3 -> "Más registros = mejor"
+                else -> "Pocos registros"
+            }
+            DashboardCard(
+                icon = "⚖️",
+                title = "Peso — histórico",
+                main = "${String.format("%.1f", stats.minKg)} — ${String.format("%.1f", stats.maxKg)}",
+                mainSuffix = " kg",
+                sub = "Promedio: ${String.format("%.1f", stats.avgKg)} kg",
+                detail = "${stats.count} registros en total",
+                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+            )
+        } else {
+            DashboardCard(
+                icon = "⚖️",
+                title = "Peso",
+                main = "--",
+                mainSuffix = " kg",
+                sub = "Sin registros",
+                detail = "Tocá para registrar",
+                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+            )
+        })
+
+        // Card 3 — Calorías histórico
+        val calAvg = db.getAvgCaloriesAllTime()
+        val foodCount = db.getFoodCount()
+        val calStatus = when {
+            foodCount == 0 -> "Sin registros"
+            calAvg < 1200 -> "Promedio bajo ⚠️"
+            calAvg in 1200.0..2500.0 -> "Dentro del rango ✓"
+            else -> "Por encima del límite ⚠️"
+        }
+        historicalCards.add(DashboardCard(
+            icon = "🍽️",
+            title = "Calorías — histórico",
+            main = calAvg.toInt().toString(),
+            mainSuffix = " kcal/día",
+            sub = calStatus,
+            detail = "$foodCount comidas registradas",
+            onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
+        ))
+    }
+
+    private fun setupHistoricalCarousel() {
+        val adapter = DashboardCardAdapter(historicalCards)
+        viewPagerHistorical.adapter = adapter
+
+        viewPagerHistorical.offscreenPageLimit = 1
+        val pageTransformer = ViewPager2.PageTransformer { page, position ->
+            val absPos = Math.abs(position)
+            page.scaleY = 1f - (absPos * 0.05f)
+            page.alpha = 1f - (absPos * 0.3f)
+        }
+        viewPagerHistorical.setPageTransformer(pageTransformer)
+
+        setupHistoricalDots(historicalCards.size)
+
+        viewPagerHistorical.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                updateHistoricalDots(position)
+            }
+        })
+    }
+
     private fun setupDots(count: Int) {
         dotsContainer.removeAllViews()
         repeat(count) { i ->
@@ -178,6 +288,32 @@ class MainActivity : AppCompatActivity() {
     private fun updateDots(selected: Int) {
         for (i in 0 until dotsContainer.childCount) {
             val dot = dotsContainer.getChildAt(i) as TextView
+            dot.text = if (i == selected) "●" else "○"
+            dot.alpha = if (i == selected) 1f else 0.4f
+        }
+    }
+
+    private fun setupHistoricalDots(count: Int) {
+        dotsContainerHistorical.removeAllViews()
+        repeat(count) { i ->
+            val dot = TextView(this).apply {
+                text = if (i == 0) "●" else "○"
+                textSize = 12f
+                setTextColor(getColor(R.color.primary))
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                params.marginEnd = 8
+                layoutParams = params
+            }
+            dotsContainerHistorical.addView(dot)
+        }
+    }
+
+    private fun updateHistoricalDots(selected: Int) {
+        for (i in 0 until dotsContainerHistorical.childCount) {
+            val dot = dotsContainerHistorical.getChildAt(i) as TextView
             dot.text = if (i == selected) "●" else "○"
             dot.alpha = if (i == selected) 1f else 0.4f
         }

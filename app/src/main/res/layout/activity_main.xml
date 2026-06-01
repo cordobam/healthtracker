@@ -38,33 +38,79 @@
                 android:layout_marginTop="2dp"/>
         </LinearLayout>
 
-        <!-- Reemplaza el ScrollView completo -->
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingTop="16dp">
+            android:layout_weight="1">
 
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/viewPagerCards"
-                android:layout_width="match_parent"
-                android:layout_height="220dp"
-                android:paddingHorizontal="24dp"
-                android:clipToPadding="false"
-                android:clipChildren="false"/>
-
-            <!-- Indicadores de puntos -->
             <LinearLayout
-                android:id="@+id/dotsContainer"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:orientation="horizontal"
-                android:layout_marginTop="12dp"
-                />
+                android:orientation="vertical"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp">
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Semanal"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:paddingHorizontal="24dp"
+                    android:paddingTop="24dp"
+                    android:paddingBottom="8dp"/>
+
+                <!-- Carrusel semanal -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerCards"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:paddingHorizontal="24dp"
+                    android:clipToPadding="false"
+                    android:clipChildren="false"/>
+
+                <!-- Indicadores semanales -->
+                <LinearLayout
+                    android:id="@+id/dotsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"/>
+
+                <!-- Separador histórico -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Histórico"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:paddingHorizontal="24dp"
+                    android:paddingTop="24dp"
+                    android:paddingBottom="8dp"/>
+
+                <!-- Carrusel histórico -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerHistorical"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:paddingHorizontal="24dp"
+                    android:clipToPadding="false"
+                    android:clipChildren="false"/>
+
+                <!-- Indicadores históricos -->
+                <LinearLayout
+                    android:id="@+id/dotsContainerHistorical"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"/>
+
+            </LinearLayout>
+        </ScrollView>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigation"

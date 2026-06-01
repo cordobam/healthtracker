@@ -411,6 +411,69 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.close()
         return map
     }
+
+    // ─── Historical (all-time) ─────────────────────────────────────────────
+
+    fun getAvgBloodPressureAllTime(): Pair<Double, Double>? {
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT AVG($BP_SYSTOLIC), AVG($BP_DIASTOLIC) FROM $TABLE_BLOOD_PRESSURE", null
+        )
+        return if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            val result = Pair(cursor.getDouble(0), cursor.getDouble(1))
+            cursor.close()
+            result
+        } else {
+            cursor.close()
+            null
+        }
+    }
+
+    fun getBloodPressureCount(): Int {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT COUNT(*) FROM $TABLE_BLOOD_PRESSURE", null)
+        val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        return count
+    }
+
+    fun getWeightAllTimeStats(): WeightAllTimeStats? {
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT MIN($W_VALUE), MAX($W_VALUE), AVG($W_VALUE), COUNT(*) FROM $TABLE_WEIGHT", null
+        )
+        return if (cursor.moveToFirst() && !cursor.isNull(0)) {
+            val stats = WeightAllTimeStats(
+                minKg = cursor.getDouble(0),
+                maxKg = cursor.getDouble(1),
+                avgKg = cursor.getDouble(2),
+                count = cursor.getInt(3)
+            )
+            cursor.close()
+            stats
+        } else {
+            cursor.close()
+            null
+        }
+    }
+
+    fun getAvgCaloriesAllTime(): Double {
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT AVG(daily) FROM (SELECT SUM($F_CALORIES) as daily FROM $TABLE_FOOD GROUP BY $F_DATE)", null
+        )
+        val avg = if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getDouble(0) else 0.0
+        cursor.close()
+        return avg
+    }
+
+    fun getFoodCount(): Int {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT COUNT(*) FROM $TABLE_FOOD", null)
+        val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        return count
+    }
 }
 
 // ─── Data Classes ─────────────────────────────────────────────────────────────
@@ -448,4 +511,11 @@ data class HabitLogRecord(
     val habitId: Int,
     val date: String,
     val completed: Boolean
+)
+
+data class WeightAllTimeStats(
+    val minKg: Double,
+    val maxKg: Double,
+    val avgKg: Double,
+    val count: Int
 )
