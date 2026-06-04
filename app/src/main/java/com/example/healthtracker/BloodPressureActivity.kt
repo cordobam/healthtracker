@@ -13,14 +13,23 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
+import android.app.DatePickerDialog
+import java.text.SimpleDateFormat
+import java.util.*
 
 class BloodPressureActivity : AppCompatActivity() {
 
     private lateinit var db: DatabaseHelper
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: BpAdapter
+    private var adapter: BpAdapter? = null
     private lateinit var tvEmpty: TextView
     private lateinit var tvTodayCount: TextView
+
+    private lateinit var tvSelectedDate: TextView
+
+    private val dbSdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val displaySdf = SimpleDateFormat("EEEE d 'de' MMMM", Locale("es", "AR"))
+    private var selectedDate: String = dbSdf.format(Date())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +44,32 @@ class BloodPressureActivity : AppCompatActivity() {
 
         setupNavigation()
 
+        tvSelectedDate = findViewById(R.id.tvSelectedDate)
+
+        val btnDateToday = findViewById<Button>(R.id.btnDateToday)
+        val btnDateYesterday = findViewById<Button>(R.id.btnDateYesterday)
+        val btnDatePicker = findViewById<ImageButton>(R.id.btnDatePicker)
+
+        btnDateToday.setOnClickListener {
+            selectedDate = dbSdf.format(Date())
+            loadRecords()
+        }
+        btnDateYesterday.setOnClickListener {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+            selectedDate = dbSdf.format(cal.time)
+            loadRecords()
+        }
+        btnDatePicker.setOnClickListener {
+            val cal = Calendar.getInstance()
+            val parts = selectedDate.split("-")
+            cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+            DatePickerDialog(this, { _, y, m, d ->
+                selectedDate = String.format("%04d-%02d-%02d", y, m + 1, d)
+                loadRecords()
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
         findViewById<FloatingActionButton>(R.id.fabAddBp).setOnClickListener {
             showAddDialog()
         }
@@ -48,10 +83,13 @@ class BloodPressureActivity : AppCompatActivity() {
     }
 
     private fun loadRecords() {
-        val records = db.getBloodPressureThisWeek()
-        val todayRecords = db.getBloodPressureToday()
+        val records = db.getBloodPressureByDate(selectedDate)
 
-        tvTodayCount.text = "Hoy: ${todayRecords.size}/3 mediciones"
+        tvTodayCount.text = "${records.size}/3 mediciones"
+
+        val dateForDisplay = dbSdf.parse(selectedDate)!!
+        tvSelectedDate.text = displaySdf.format(dateForDisplay)
+            .replaceFirstChar { it.uppercase() }
 
         if (records.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
@@ -83,13 +121,14 @@ class BloodPressureActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                val todayCount = db.getBloodPressureToday().size
-                if (todayCount >= 3) {
-                    Toast.makeText(this, "Ya registraste 3 mediciones hoy", Toast.LENGTH_LONG).show()
+                val dayRecords = db.getBloodPressureByDate(selectedDate)
+                if (dayRecords.size >= 3) {
+                    Toast.makeText(this, "Ya registraste 3 mediciones este día", Toast.LENGTH_LONG).show()
                     return@setPositiveButton
                 }
 
-                db.insertBloodPressure(sys, dia, pulse)
+                val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                db.insertBloodPressure(sys, dia, pulse, selectedDate, now)
                 Toast.makeText(this, "✓ Medición guardada", Toast.LENGTH_SHORT).show()
                 loadRecords()
             }
