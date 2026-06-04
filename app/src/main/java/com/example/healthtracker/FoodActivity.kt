@@ -13,6 +13,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
+import android.app.DatePickerDialog
+import java.text.SimpleDateFormat
+import java.util.*
 
 class FoodActivity : AppCompatActivity() {
 
@@ -21,6 +24,15 @@ class FoodActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var tvTotalCalories: TextView
     private lateinit var tvCaloriesBar: ProgressBar
+
+    private lateinit var tvSelectedDate: TextView
+    private lateinit var btnDateToday: Button
+    private lateinit var btnDateYesterday: Button
+    private lateinit var btnDatePicker: ImageButton
+
+    private val dbSdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val displaySdf = SimpleDateFormat("EEEE d 'de' MMMM", Locale("es", "AR"))
+    private var selectedDate: String = dbSdf.format(Date())
 
     companion object {
         const val DAILY_GOAL = 2000
@@ -39,6 +51,12 @@ class FoodActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         setupNavigation()
 
+        tvSelectedDate = findViewById(R.id.tvSelectedDate)
+        btnDateToday = findViewById(R.id.btnDateToday)
+        btnDateYesterday = findViewById(R.id.btnDateYesterday)
+        btnDatePicker = findViewById(R.id.btnDatePicker)
+        setupDateButtons()
+
         findViewById<FloatingActionButton>(R.id.fabAddFood).setOnClickListener {
             showAddDialog()
         }
@@ -52,12 +70,16 @@ class FoodActivity : AppCompatActivity() {
     }
 
     private fun loadRecords() {
-        val records = db.getFoodToday()
-        val total = db.getTotalCaloriesToday()
+        val records = db.getFoodByDate(selectedDate)
+        val total = db.getTotalCaloriesByDate(selectedDate)
 
-        tvTotalCalories.text = "Hoy: $total / $DAILY_GOAL kcal"
+        tvTotalCalories.text = "$total / $DAILY_GOAL kcal"
         tvCaloriesBar.max = DAILY_GOAL
         tvCaloriesBar.progress = minOf(total, DAILY_GOAL)
+
+        val dateForDisplay = dbSdf.parse(selectedDate)!!
+        tvSelectedDate.text = displaySdf.format(dateForDisplay)
+            .replaceFirstChar { it.uppercase() }
 
         if (records.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
@@ -65,8 +87,7 @@ class FoodActivity : AppCompatActivity() {
         } else {
             tvEmpty.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE
-            val adapter = FoodAdapter(records) { id -> confirmDelete(id) }
-            recyclerView.adapter = adapter
+            recyclerView.adapter = FoodAdapter(records) { id -> confirmDelete(id) }
         }
     }
 
@@ -92,7 +113,7 @@ class FoodActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                db.insertFood(name, calories, meal)
+                db.insertFood(name, calories, meal, selectedDate)
                 Toast.makeText(this, "✓ Comida guardada", Toast.LENGTH_SHORT).show()
                 loadRecords()
             }
@@ -124,6 +145,28 @@ class FoodActivity : AppCompatActivity() {
                 R.id.nav_habits -> { startActivity(Intent(this, HabitsActivity::class.java)); false }
                 else -> false
             }
+        }
+    }
+
+    private fun setupDateButtons() {
+        btnDateToday.setOnClickListener {
+            selectedDate = dbSdf.format(Date())
+            loadRecords()
+        }
+        btnDateYesterday.setOnClickListener {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+            selectedDate = dbSdf.format(cal.time)
+            loadRecords()
+        }
+        btnDatePicker.setOnClickListener {
+            val cal = Calendar.getInstance()
+            val parts = selectedDate.split("-")
+            cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+            DatePickerDialog(this, { _, y, m, d ->
+                selectedDate = String.format("%04d-%02d-%02d", y, m + 1, d)
+                loadRecords()
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
         }
     }
 }

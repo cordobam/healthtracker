@@ -109,19 +109,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     // ─── Blood Pressure ───────────────────────────────────────────────────────
 
-    fun insertBloodPressure(systolic: Int, diastolic: Int, pulse: Int?): Long {
-        val db = writableDatabase
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val tdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val now = Date()
+    fun insertBloodPressure(systolic: Int, diastolic: Int, pulse: Int?, date: String, time: String): Long {
         val values = ContentValues().apply {
             put(BP_SYSTOLIC, systolic)
             put(BP_DIASTOLIC, diastolic)
             pulse?.let { put(BP_PULSE, it) }
-            put(BP_DATE, sdf.format(now))
-            put(BP_TIME, tdf.format(now))
+            put(BP_DATE, date)
+            put(BP_TIME, time)
         }
-        return db.insert(TABLE_BLOOD_PRESSURE, null, values)
+        return writableDatabase.insert(TABLE_BLOOD_PRESSURE, null, values)
     }
 
     fun getBloodPressureThisWeek(): List<BloodPressureRecord> {
@@ -134,6 +130,26 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val cursor = db.rawQuery(
             "SELECT * FROM $TABLE_BLOOD_PRESSURE WHERE $BP_DATE >= ? ORDER BY $BP_DATE DESC, $BP_TIME DESC",
             arrayOf(weekAgo)
+        )
+        val records = mutableListOf<BloodPressureRecord>()
+        while (cursor.moveToNext()) {
+            records.add(BloodPressureRecord(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(BP_ID)),
+                systolic = cursor.getInt(cursor.getColumnIndexOrThrow(BP_SYSTOLIC)),
+                diastolic = cursor.getInt(cursor.getColumnIndexOrThrow(BP_DIASTOLIC)),
+                pulse = cursor.getInt(cursor.getColumnIndexOrThrow(BP_PULSE)),
+                date = cursor.getString(cursor.getColumnIndexOrThrow(BP_DATE)),
+                time = cursor.getString(cursor.getColumnIndexOrThrow(BP_TIME))
+            ))
+        }
+        cursor.close()
+        return records
+    }
+
+    fun getBloodPressureByDate(date: String): List<BloodPressureRecord> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_BLOOD_PRESSURE WHERE $BP_DATE = ? ORDER BY $BP_TIME DESC",
+            arrayOf(date)
         )
         val records = mutableListOf<BloodPressureRecord>()
         while (cursor.moveToNext()) {
@@ -260,16 +276,43 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     // ─── Food ─────────────────────────────────────────────────────────────────
 
-    fun insertFood(name: String, calories: Int, mealType: String): Long {
-        val db = writableDatabase
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    fun insertFood(name: String, calories: Int, mealType: String, date: String): Long {
         val values = ContentValues().apply {
             put(F_NAME, name)
             put(F_CALORIES, calories)
-            put(F_DATE, today)
+            put(F_DATE, date)
             put(F_MEAL_TYPE, mealType)
         }
-        return db.insert(TABLE_FOOD, null, values)
+        return writableDatabase.insert(TABLE_FOOD, null, values)
+    }
+
+    fun getFoodByDate(date: String): List<FoodRecord> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_FOOD WHERE $F_DATE = ? ORDER BY $F_ID ASC",
+            arrayOf(date)
+        )
+        val records = mutableListOf<FoodRecord>()
+        while (cursor.moveToNext()) {
+            records.add(FoodRecord(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(F_ID)),
+                name = cursor.getString(cursor.getColumnIndexOrThrow(F_NAME)),
+                calories = cursor.getInt(cursor.getColumnIndexOrThrow(F_CALORIES)),
+                date = cursor.getString(cursor.getColumnIndexOrThrow(F_DATE)),
+                mealType = cursor.getString(cursor.getColumnIndexOrThrow(F_MEAL_TYPE))
+            ))
+        }
+        cursor.close()
+        return records
+    }
+
+    fun getTotalCaloriesByDate(date: String): Int {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT SUM($F_CALORIES) FROM $TABLE_FOOD WHERE $F_DATE = ?",
+            arrayOf(date)
+        )
+        val total = if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getInt(0) else 0
+        cursor.close()
+        return total
     }
 
     fun getFoodToday(): List<FoodRecord> {
