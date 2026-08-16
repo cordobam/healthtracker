@@ -43,10 +43,27 @@ class MainActivity : AppCompatActivity() {
 
         setupNavigation()
         setGreeting()
+
+        findViewById<TextView>(R.id.btnConfigMenu).setOnClickListener {
+            NavigationBuilder.showConfigDialog(this) { rebuildUi() }
+        }
+
+        if (!ModulePrefs.isConfigured(this)) {
+            NavigationBuilder.showConfigDialog(this) { rebuildUi() }
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        setupNavigation()
+        buildCards()
+        setupCarousel()
+        buildHistoricalCards()
+        setupHistoricalCarousel()
+    }
+
+    private fun rebuildUi() {
+        setupNavigation()
         buildCards()
         setupCarousel()
         buildHistoricalCards()
@@ -59,86 +76,92 @@ class MainActivity : AppCompatActivity() {
         cards.clear()
 
         // Card 1 — Blood Pressure
-        val bpAvg = db.getAvgBloodPressureWeek()
-        val bpCount = db.getBloodPressureThisWeek().size
-        cards.add(if (bpAvg != null) {
-            val sys = bpAvg.first.toInt()
-            val dia = bpAvg.second.toInt()
-            val (status, _) = classifyBloodPressure(sys, dia)
-            DashboardCard(
-                icon = "❤️",
-                title = "Presión Arterial — promedio semanal",
-                main = "$sys/$dia",
-                mainSuffix = " mmHg",
-                sub = status,
-                detail = "$bpCount mediciones esta semana",
-                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-            )
-        } else {
-            DashboardCard(
-                icon = "❤️",
-                title = "Presión Arterial",
-                main = "--/--",
-                mainSuffix = "",
-                sub = "Sin datos esta semana",
-                detail = "Tocá para registrar",
-                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-            )
-        })
+        if (ModulePrefs.isEnabled(this, Module.BP)) {
+            val bpAvg = db.getAvgBloodPressureWeek()
+            val bpCount = db.getBloodPressureThisWeek().size
+            cards.add(if (bpAvg != null) {
+                val sys = bpAvg.first.toInt()
+                val dia = bpAvg.second.toInt()
+                val (status, _) = classifyBloodPressure(sys, dia)
+                DashboardCard(
+                    icon = "❤️",
+                    title = "Presión Arterial — promedio semanal",
+                    main = "$sys/$dia",
+                    mainSuffix = " mmHg",
+                    sub = status,
+                    detail = "$bpCount mediciones esta semana",
+                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                )
+            } else {
+                DashboardCard(
+                    icon = "❤️",
+                    title = "Presión Arterial",
+                    main = "--/--",
+                    mainSuffix = "",
+                    sub = "Sin datos esta semana",
+                    detail = "Tocá para registrar",
+                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                )
+            })
+        }
 
         // Card 2 — Weight
-        val latest = db.getLatestWeight()
-        val change = db.getWeightChangeLastMonth()
-        cards.add(if (latest != null) {
-            val changeText = change?.let {
-                val sign = if (it >= 0) "+" else ""
-                "${sign}${String.format("%.1f", it)} kg este mes"
-            } ?: "Primera medición"
-            val status = when {
-                change == null -> "Seguí midiendo"
-                change < -2 -> "Bajando 📉"
-                change > 2 -> "Subiendo 📈"
-                else -> "Estable ✓"
-            }
-            DashboardCard(
-                icon = "⚖️",
-                title = "Peso — último registro",
-                main = String.format("%.1f", latest.weightKg),
-                mainSuffix = " kg",
-                sub = status,
-                detail = changeText,
-                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-            )
-        } else {
-            DashboardCard(
-                icon = "⚖️",
-                title = "Peso",
-                main = "--",
-                mainSuffix = " kg",
-                sub = "Sin datos",
-                detail = "Tocá para registrar",
-                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-            )
-        })
+        if (ModulePrefs.isEnabled(this, Module.WEIGHT)) {
+            val latest = db.getLatestWeight()
+            val change = db.getWeightChangeLastMonth()
+            cards.add(if (latest != null) {
+                val changeText = change?.let {
+                    val sign = if (it >= 0) "+" else ""
+                    "${sign}${String.format("%.1f", it)} kg este mes"
+                } ?: "Primera medición"
+                val status = when {
+                    change == null -> "Seguí midiendo"
+                    change < -2 -> "Bajando 📉"
+                    change > 2 -> "Subiendo 📈"
+                    else -> "Estable ✓"
+                }
+                DashboardCard(
+                    icon = "⚖️",
+                    title = "Peso — último registro",
+                    main = String.format("%.1f", latest.weightKg),
+                    mainSuffix = " kg",
+                    sub = status,
+                    detail = changeText,
+                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                )
+            } else {
+                DashboardCard(
+                    icon = "⚖️",
+                    title = "Peso",
+                    main = "--",
+                    mainSuffix = " kg",
+                    sub = "Sin datos",
+                    detail = "Tocá para registrar",
+                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                )
+            })
+        }
 
         // Card 3 — Calories
-        val todayTotal = db.getTotalCaloriesToday()
-        val weekAvg = db.getAvgCaloriesWeek()
-        val calStatus = when {
-            todayTotal == 0 -> "Sin registros hoy"
-            todayTotal < 1200 -> "Muy pocas calorías ⚠️"
-            todayTotal in 1200..2500 -> "Dentro del rango ✓"
-            else -> "Por encima del límite ⚠️"
+        if (ModulePrefs.isEnabled(this, Module.FOOD)) {
+            val todayTotal = db.getTotalCaloriesToday()
+            val weekAvg = db.getAvgCaloriesWeek()
+            val calStatus = when {
+                todayTotal == 0 -> "Sin registros hoy"
+                todayTotal < 1200 -> "Muy pocas calorías ⚠️"
+                todayTotal in 1200..2500 -> "Dentro del rango ✓"
+                else -> "Por encima del límite ⚠️"
+            }
+            cards.add(DashboardCard(
+                icon = "🍽️",
+                title = "Calorías — hoy",
+                main = todayTotal.toString(),
+                mainSuffix = " kcal",
+                sub = calStatus,
+                detail = "Promedio semanal: ${weekAvg.toInt()} kcal",
+                onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
+            ))
         }
-        cards.add(DashboardCard(
-            icon = "🍽️",
-            title = "Calorías — hoy",
-            main = todayTotal.toString(),
-            mainSuffix = " kcal",
-            sub = calStatus,
-            detail = "Promedio semanal: ${weekAvg.toInt()} kcal",
-            onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
-        ))
     }
 
     // ── Carousel setup ────────────────────────────────────────────────────────
@@ -170,80 +193,86 @@ class MainActivity : AppCompatActivity() {
         historicalCards.clear()
 
         // Card 1 — Blood Pressure histórico
-        val bpAvg = db.getAvgBloodPressureAllTime()
-        val bpCount = db.getBloodPressureCount()
-        historicalCards.add(if (bpAvg != null) {
-            val sys = bpAvg.first.toInt()
-            val dia = bpAvg.second.toInt()
-            val (status, _) = classifyBloodPressure(sys, dia)
-            DashboardCard(
-                icon = "❤️",
-                title = "Presión Arterial — histórico",
-                main = "$sys/$dia",
-                mainSuffix = " mmHg",
-                sub = status,
-                detail = "$bpCount mediciones en total",
-                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-            )
-        } else {
-            DashboardCard(
-                icon = "❤️",
-                title = "Presión Arterial",
-                main = "--/--",
-                mainSuffix = "",
-                sub = "Sin registros",
-                detail = "Tocá para registrar",
-                onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-            )
-        })
+        if (ModulePrefs.isEnabled(this, Module.BP)) {
+            val bpAvg = db.getAvgBloodPressureAllTime()
+            val bpCount = db.getBloodPressureCount()
+            historicalCards.add(if (bpAvg != null) {
+                val sys = bpAvg.first.toInt()
+                val dia = bpAvg.second.toInt()
+                val (status, _) = classifyBloodPressure(sys, dia)
+                DashboardCard(
+                    icon = "❤️",
+                    title = "Presión Arterial — histórico",
+                    main = "$sys/$dia",
+                    mainSuffix = " mmHg",
+                    sub = status,
+                    detail = "$bpCount mediciones en total",
+                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                )
+            } else {
+                DashboardCard(
+                    icon = "❤️",
+                    title = "Presión Arterial",
+                    main = "--/--",
+                    mainSuffix = "",
+                    sub = "Sin registros",
+                    detail = "Tocá para registrar",
+                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                )
+            })
+        }
 
         // Card 2 — Weight histórico
-        val stats = db.getWeightAllTimeStats()
-        historicalCards.add(if (stats != null) {
-            val status = when {
-                stats.count >= 10 -> "Suficientes datos ✓"
-                stats.count >= 3 -> "Más registros = mejor"
-                else -> "Pocos registros"
-            }
-            DashboardCard(
-                icon = "⚖️",
-                title = "Peso — histórico",
-                main = "${String.format("%.1f", stats.minKg)} — ${String.format("%.1f", stats.maxKg)}",
-                mainSuffix = " kg",
-                sub = "Promedio: ${String.format("%.1f", stats.avgKg)} kg",
-                detail = "${stats.count} registros en total",
-                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-            )
-        } else {
-            DashboardCard(
-                icon = "⚖️",
-                title = "Peso",
-                main = "--",
-                mainSuffix = " kg",
-                sub = "Sin registros",
-                detail = "Tocá para registrar",
-                onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-            )
-        })
+        if (ModulePrefs.isEnabled(this, Module.WEIGHT)) {
+            val stats = db.getWeightAllTimeStats()
+            historicalCards.add(if (stats != null) {
+                val status = when {
+                    stats.count >= 10 -> "Suficientes datos ✓"
+                    stats.count >= 3 -> "Más registros = mejor"
+                    else -> "Pocos registros"
+                }
+                DashboardCard(
+                    icon = "⚖️",
+                    title = "Peso — histórico",
+                    main = "${String.format("%.1f", stats.minKg)} — ${String.format("%.1f", stats.maxKg)}",
+                    mainSuffix = " kg",
+                    sub = "Promedio: ${String.format("%.1f", stats.avgKg)} kg",
+                    detail = "${stats.count} registros en total",
+                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                )
+            } else {
+                DashboardCard(
+                    icon = "⚖️",
+                    title = "Peso",
+                    main = "--",
+                    mainSuffix = " kg",
+                    sub = "Sin registros",
+                    detail = "Tocá para registrar",
+                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                )
+            })
+        }
 
         // Card 3 — Calorías histórico
-        val calAvg = db.getAvgCaloriesAllTime()
-        val foodCount = db.getFoodCount()
-        val calStatus = when {
-            foodCount == 0 -> "Sin registros"
-            calAvg < 1200 -> "Promedio bajo ⚠️"
-            calAvg in 1200.0..2500.0 -> "Dentro del rango ✓"
-            else -> "Por encima del límite ⚠️"
+        if (ModulePrefs.isEnabled(this, Module.FOOD)) {
+            val calAvg = db.getAvgCaloriesAllTime()
+            val foodCount = db.getFoodCount()
+            val calStatus = when {
+                foodCount == 0 -> "Sin registros"
+                calAvg < 1200 -> "Promedio bajo ⚠️"
+                calAvg in 1200.0..2500.0 -> "Dentro del rango ✓"
+                else -> "Por encima del límite ⚠️"
+            }
+            historicalCards.add(DashboardCard(
+                icon = "🍽️",
+                title = "Calorías — histórico",
+                main = calAvg.toInt().toString(),
+                mainSuffix = " kcal/día",
+                sub = calStatus,
+                detail = "$foodCount comidas registradas",
+                onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
+            ))
         }
-        historicalCards.add(DashboardCard(
-            icon = "🍽️",
-            title = "Calorías — histórico",
-            main = calAvg.toInt().toString(),
-            mainSuffix = " kcal/día",
-            sub = calStatus,
-            detail = "$foodCount comidas registradas",
-            onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
-        ))
     }
 
     private fun setupHistoricalCarousel() {
@@ -341,26 +370,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateTo(destination: Class<*>) {
-        if (this::class.java == destination) return
-        startActivity(Intent(this, destination).apply {
-            flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-        })
-    }
-
     private fun setupNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        bottomNav.selectedItemId = R.id.nav_home
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home    -> true
-                R.id.nav_bp      -> { navigateTo(BloodPressureActivity::class.java); false }
-                R.id.nav_weight  -> { navigateTo(WeightActivity::class.java); false }
-                R.id.nav_food    -> { navigateTo(FoodActivity::class.java); false }
-                R.id.nav_habits  -> { navigateTo(HabitsActivity::class.java); false }
-                else -> false
-            }
-        }
+        NavigationBuilder.setup(bottomNav, this, Module.HOME)
     }
 }
 

@@ -4,20 +4,4 @@
         android:id="@+id/nav_home"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Inicio"/>
-    <item
-        android:id="@+id/nav_bp"
-        android:icon="@android:drawable/ic_menu_compass"
-        android:title="Presión"/>
-    <item
-        android:id="@+id/nav_weight"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
-        android:title="Peso"/>
-    <item
-        android:id="@+id/nav_food"
-        android:icon="@android:drawable/ic_menu_agenda"
-        android:title="Comidas"/>
-    <item
-        android:id="@+id/nav_habits"
-        android:icon="@android:drawable/ic_menu_my_calendar"
-        android:title="Rutina"/>
 </menu>
