@@ -1,6 +1,5 @@
 package com.example.healthtracker
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -150,17 +149,7 @@ class BloodPressureActivity : AppCompatActivity() {
 
     private fun setupNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        bottomNav.selectedItemId = R.id.nav_bp
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> { startActivity(Intent(this, MainActivity::class.java)); false }
-                R.id.nav_bp -> true
-                R.id.nav_weight -> { startActivity(Intent(this, WeightActivity::class.java)); false }
-                R.id.nav_food -> { startActivity(Intent(this, FoodActivity::class.java)); false }
-                R.id.nav_habits -> { startActivity(Intent(this, HabitsActivity::class.java)); false }
-                else -> false
-            }
-        }
+        NavigationBuilder.setup(bottomNav, this, Module.BP)
     }
 }
 
