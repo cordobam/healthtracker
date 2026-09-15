@@ -29,7 +29,7 @@ object ModulePrefs {
     fun saveSelected(context: Context, modules: List<Module>) {
         val ids = modules.filter { it != Module.HOME }.joinToString(",") { it.itemId.toString() }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putString(KEY_SELECTED, ids).apply()
+            .edit().putString(KEY_SELECTED, ids).commit()
     }
 
     fun isEnabled(context: Context, module: Module): Boolean =
