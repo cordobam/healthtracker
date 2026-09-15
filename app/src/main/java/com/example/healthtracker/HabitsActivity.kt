@@ -65,6 +65,7 @@ class HabitsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        setupNavigation()
         refreshCalendar()
         loadHabitsForDay(selectedDate)
     }

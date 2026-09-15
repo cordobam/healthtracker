@@ -44,6 +44,7 @@ class WeightActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        setupNavigation()
         loadRecords()
     }
 
