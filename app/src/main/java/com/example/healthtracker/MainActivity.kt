@@ -79,67 +79,69 @@ class MainActivity : AppCompatActivity() {
         if (ModulePrefs.isEnabled(this, Module.BP)) {
             val bpAvg = db.getAvgBloodPressureWeek()
             val bpCount = db.getBloodPressureThisWeek().size
-            cards.add(if (bpAvg != null) {
-                val sys = bpAvg.first.toInt()
-                val dia = bpAvg.second.toInt()
-                val (status, _) = classifyBloodPressure(sys, dia)
-                DashboardCard(
-                    icon = "❤️",
-                    title = "Presión Arterial — promedio semanal",
-                    main = "$sys/$dia",
-                    mainSuffix = " mmHg",
-                    sub = status,
-                    detail = "$bpCount mediciones esta semana",
-                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-                )
-            } else {
-                DashboardCard(
-                    icon = "❤️",
-                    title = "Presión Arterial",
-                    main = "--/--",
-                    mainSuffix = "",
-                    sub = "Sin datos esta semana",
-                    detail = "Tocá para registrar",
-                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-                )
-            })
+            cards.add(
+                if (bpAvg != null) {
+                    val sys = bpAvg.first.toInt()
+                    val dia = bpAvg.second.toInt()
+                    val (status, _) = classifyBloodPressure(sys, dia)
+                    DashboardCard(
+                        icon = "❤️",
+                        title = "Presión Arterial — promedio semanal",
+                        main = "$sys/$dia",
+                        mainSuffix = " mmHg",
+                        sub = status,
+                        detail = "$bpCount mediciones esta semana",
+                        onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                    )
+                } else {
+                    DashboardCard(
+                        icon = "❤️",
+                        title = "Presión Arterial",
+                        main = "--/--",
+                        mainSuffix = "",
+                        sub = "Sin datos esta semana",
+                        detail = "Tocá para registrar",
+                        onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                    )
+                })
         }
 
         // Card 2 — Weight
         if (ModulePrefs.isEnabled(this, Module.WEIGHT)) {
             val latest = db.getLatestWeight()
             val change = db.getWeightChangeLastMonth()
-            cards.add(if (latest != null) {
-                val changeText = change?.let {
-                    val sign = if (it >= 0) "+" else ""
-                    "${sign}${String.format("%.1f", it)} kg este mes"
-                } ?: "Primera medición"
-                val status = when {
-                    change == null -> "Seguí midiendo"
-                    change < -2 -> "Bajando 📉"
-                    change > 2 -> "Subiendo 📈"
-                    else -> "Estable ✓"
-                }
-                DashboardCard(
-                    icon = "⚖️",
-                    title = "Peso — último registro",
-                    main = String.format("%.1f", latest.weightKg),
-                    mainSuffix = " kg",
-                    sub = status,
-                    detail = changeText,
-                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-                )
-            } else {
-                DashboardCard(
-                    icon = "⚖️",
-                    title = "Peso",
-                    main = "--",
-                    mainSuffix = " kg",
-                    sub = "Sin datos",
-                    detail = "Tocá para registrar",
-                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-                )
-            })
+            cards.add(
+                if (latest != null) {
+                    val changeText = change?.let {
+                        val sign = if (it >= 0) "+" else ""
+                        "${sign}${String.format("%.1f", it)} kg este mes"
+                    } ?: "Primera medición"
+                    val status = when {
+                        change == null -> "Seguí midiendo"
+                        change < -2 -> "Bajando 📉"
+                        change > 2 -> "Subiendo 📈"
+                        else -> "Estable ✓"
+                    }
+                    DashboardCard(
+                        icon = "⚖️",
+                        title = "Peso — último registro",
+                        main = String.format("%.1f", latest.weightKg),
+                        mainSuffix = " kg",
+                        sub = status,
+                        detail = changeText,
+                        onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                    )
+                } else {
+                    DashboardCard(
+                        icon = "⚖️",
+                        title = "Peso",
+                        main = "--",
+                        mainSuffix = " kg",
+                        sub = "Sin datos",
+                        detail = "Tocá para registrar",
+                        onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                    )
+                })
         }
 
         // Card 3 — Calories
@@ -152,7 +154,8 @@ class MainActivity : AppCompatActivity() {
                 todayTotal in 1200..2500 -> "Dentro del rango ✓"
                 else -> "Por encima del límite ⚠️"
             }
-            cards.add(DashboardCard(
+            cards.add(
+                DashboardCard(
                 icon = "🍽️",
                 title = "Calorías — hoy",
                 main = todayTotal.toString(),
@@ -160,6 +163,28 @@ class MainActivity : AppCompatActivity() {
                 sub = calStatus,
                 detail = "Promedio semanal: ${weekAvg.toInt()} kcal",
                 onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
+            ))
+        }
+
+        // Card 4 — Habits (semanal)
+        if (ModulePrefs.isEnabled(this, Module.HABITS)) {
+            val (diasOk, totalDias) = db.getHabitCompletionWeek()
+            val pct = if (totalDias > 0) (diasOk * 100 / totalDias) else 0
+            val status = when {
+                diasOk == 0 -> "Sin actividad"
+                pct >= 80 -> "Muy bien"
+                pct >= 50 -> "Bien"
+                else -> "Mejorable"
+            }
+            cards.add(
+                DashboardCard(
+                icon = "✅",
+                title = "Rutina — semana",
+                main = "$diasOk/$totalDias",
+                mainSuffix = " días",
+                sub = status,
+                detail = "$pct% días con ≥50% hábitos",
+                onClick = { startActivity(Intent(this, HabitsActivity::class.java)) }
             ))
         }
     }
@@ -196,61 +221,68 @@ class MainActivity : AppCompatActivity() {
         if (ModulePrefs.isEnabled(this, Module.BP)) {
             val bpAvg = db.getAvgBloodPressureAllTime()
             val bpCount = db.getBloodPressureCount()
-            historicalCards.add(if (bpAvg != null) {
-                val sys = bpAvg.first.toInt()
-                val dia = bpAvg.second.toInt()
-                val (status, _) = classifyBloodPressure(sys, dia)
-                DashboardCard(
-                    icon = "❤️",
-                    title = "Presión Arterial — histórico",
-                    main = "$sys/$dia",
-                    mainSuffix = " mmHg",
-                    sub = status,
-                    detail = "$bpCount mediciones en total",
-                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-                )
-            } else {
-                DashboardCard(
-                    icon = "❤️",
-                    title = "Presión Arterial",
-                    main = "--/--",
-                    mainSuffix = "",
-                    sub = "Sin registros",
-                    detail = "Tocá para registrar",
-                    onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
-                )
-            })
+            historicalCards.add(
+                if (bpAvg != null) {
+                    val sys = bpAvg.first.toInt()
+                    val dia = bpAvg.second.toInt()
+                    val (status, _) = classifyBloodPressure(sys, dia)
+                    DashboardCard(
+                        icon = "❤️",
+                        title = "Presión Arterial — histórico",
+                        main = "$sys/$dia",
+                        mainSuffix = " mmHg",
+                        sub = status,
+                        detail = "$bpCount mediciones en total",
+                        onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                    )
+                } else {
+                    DashboardCard(
+                        icon = "❤️",
+                        title = "Presión Arterial",
+                        main = "--/--",
+                        mainSuffix = "",
+                        sub = "Sin registros",
+                        detail = "Tocá para registrar",
+                        onClick = { startActivity(Intent(this, BloodPressureActivity::class.java)) }
+                    )
+                })
         }
 
         // Card 2 — Weight histórico
         if (ModulePrefs.isEnabled(this, Module.WEIGHT)) {
             val stats = db.getWeightAllTimeStats()
-            historicalCards.add(if (stats != null) {
-                val status = when {
-                    stats.count >= 10 -> "Suficientes datos ✓"
-                    stats.count >= 3 -> "Más registros = mejor"
-                    else -> "Pocos registros"
-                }
-                DashboardCard(
-                    icon = "⚖️",
-                    title = "Peso — histórico",
-                    main = "${String.format("%.1f", stats.minKg)} — ${String.format("%.1f", stats.maxKg)}",
-                    mainSuffix = " kg",
-                    sub = "Promedio: ${String.format("%.1f", stats.avgKg)} kg",
-                    detail = "${stats.count} registros en total",
-                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-                )
-            } else {
-                DashboardCard(
-                    icon = "⚖️",
-                    title = "Peso",
-                    main = "--",
-                    mainSuffix = " kg",
-                    sub = "Sin registros",
-                    detail = "Tocá para registrar",
-                    onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
-                )
-            })
+            historicalCards.add(
+                if (stats != null) {
+                    val status = when {
+                        stats.count >= 10 -> "Suficientes datos ✓"
+                        stats.count >= 3 -> "Más registros = mejor"
+                        else -> "Pocos registros"
+                    }
+                    DashboardCard(
+                        icon = "⚖️",
+                        title = "Peso — histórico",
+                        main = "${String.format("%.1f", stats.minKg)} — ${
+                            String.format(
+                                "%.1f",
+                                stats.maxKg
+                            )
+                        }",
+                        mainSuffix = " kg",
+                        sub = "Promedio: ${String.format("%.1f", stats.avgKg)} kg",
+                        detail = "${stats.count} registros en total",
+                        onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                    )
+                } else {
+                    DashboardCard(
+                        icon = "⚖️",
+                        title = "Peso",
+                        main = "--",
+                        mainSuffix = " kg",
+                        sub = "Sin registros",
+                        detail = "Tocá para registrar",
+                        onClick = { startActivity(Intent(this, WeightActivity::class.java)) }
+                    )
+                })
         }
 
         // Card 3 — Calorías histórico
@@ -263,7 +295,8 @@ class MainActivity : AppCompatActivity() {
                 calAvg in 1200.0..2500.0 -> "Dentro del rango ✓"
                 else -> "Por encima del límite ⚠️"
             }
-            historicalCards.add(DashboardCard(
+            historicalCards.add(
+                DashboardCard(
                 icon = "🍽️",
                 title = "Calorías — histórico",
                 main = calAvg.toInt().toString(),
@@ -272,152 +305,189 @@ class MainActivity : AppCompatActivity() {
                 detail = "$foodCount comidas registradas",
                 onClick = { startActivity(Intent(this, FoodActivity::class.java)) }
             ))
+
+            // Card 4 — Habits (mensual)
+            if (ModulePrefs.isEnabled(this, Module.HABITS)) {
+                val (diasOk, totalDias) = db.getHabitCompletionMonth()
+                val pct = if (totalDias > 0) (diasOk * 100 / totalDias) else 0
+                val status = when {
+                    diasOk == 0 -> "Sin registros"
+                    pct >= 80 -> "Constante"
+                    pct >= 50 -> "Regular"
+                    else -> "Mejorable"
+                }
+                historicalCards.add(
+                    DashboardCard(
+                    icon = "✅",
+                    title = "Rutina — mes",
+                    main = "$diasOk/$totalDias",
+                    mainSuffix = " días",
+                    sub = status,
+                    detail = "$pct% días con ≥50% hábitos",
+                    onClick = { startActivity(Intent(this, HabitsActivity::class.java)) }
+                ))
+            }
+        }
+
+        // Fallback: si no hay módulos habilitados, mostrar placeholder
+        if (historicalCards.isEmpty()) {
+            historicalCards.add(DashboardCard(
+                icon = "📊",
+                title = "Histórico",
+                main = "—",
+                mainSuffix = "",
+                sub = "Sin datos históricos",
+                detail = "Activá módulos en ⚙️ Configurar menú",
+                onClick = { NavigationBuilder.showConfigDialog(this) { rebuildUi() } }
+            ))
         }
     }
 
     private fun setupHistoricalCarousel() {
-        val adapter = DashboardCardAdapter(historicalCards)
-        viewPagerHistorical.adapter = adapter
+            val adapter = DashboardCardAdapter(historicalCards)
+            viewPagerHistorical.adapter = adapter
 
-        viewPagerHistorical.offscreenPageLimit = 1
-        val pageTransformer = ViewPager2.PageTransformer { page, position ->
-            val absPos = Math.abs(position)
-            page.scaleY = 1f - (absPos * 0.05f)
-            page.alpha = 1f - (absPos * 0.3f)
-        }
-        viewPagerHistorical.setPageTransformer(pageTransformer)
-
-        setupHistoricalDots(historicalCards.size)
-
-        viewPagerHistorical.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                updateHistoricalDots(position)
+            viewPagerHistorical.offscreenPageLimit = 1
+            val pageTransformer = ViewPager2.PageTransformer { page, position ->
+                val absPos = Math.abs(position)
+                page.scaleY = 1f - (absPos * 0.05f)
+                page.alpha = 1f - (absPos * 0.3f)
             }
-        })
-    }
+            viewPagerHistorical.setPageTransformer(pageTransformer)
 
-    private fun setupDots(count: Int) {
-        dotsContainer.removeAllViews()
-        repeat(count) { i ->
-            val dot = TextView(this).apply {
-                text = if (i == 0) "●" else "○"
-                textSize = 12f
-                setTextColor(getColor(R.color.primary))
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                params.marginEnd = 8
-                layoutParams = params
+            setupHistoricalDots(historicalCards.size)
+
+            viewPagerHistorical.registerOnPageChangeCallback(object :
+                ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    updateHistoricalDots(position)
+                }
+            })
+        }
+
+        private fun setupDots(count: Int) {
+            dotsContainer.removeAllViews()
+            repeat(count) { i ->
+                val dot = TextView(this).apply {
+                    text = if (i == 0) "●" else "○"
+                    textSize = 12f
+                    setTextColor(getColor(R.color.primary))
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    params.marginEnd = 8
+                    layoutParams = params
+                }
+                dotsContainer.addView(dot)
             }
-            dotsContainer.addView(dot)
         }
-    }
 
-    private fun updateDots(selected: Int) {
-        for (i in 0 until dotsContainer.childCount) {
-            val dot = dotsContainer.getChildAt(i) as TextView
-            dot.text = if (i == selected) "●" else "○"
-            dot.alpha = if (i == selected) 1f else 0.4f
-        }
-    }
-
-    private fun setupHistoricalDots(count: Int) {
-        dotsContainerHistorical.removeAllViews()
-        repeat(count) { i ->
-            val dot = TextView(this).apply {
-                text = if (i == 0) "●" else "○"
-                textSize = 12f
-                setTextColor(getColor(R.color.primary))
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                params.marginEnd = 8
-                layoutParams = params
+        private fun updateDots(selected: Int) {
+            for (i in 0 until dotsContainer.childCount) {
+                val dot = dotsContainer.getChildAt(i) as TextView
+                dot.text = if (i == selected) "●" else "○"
+                dot.alpha = if (i == selected) 1f else 0.4f
             }
-            dotsContainerHistorical.addView(dot)
+        }
+
+        private fun setupHistoricalDots(count: Int) {
+            dotsContainerHistorical.removeAllViews()
+            repeat(count) { i ->
+                val dot = TextView(this).apply {
+                    text = if (i == 0) "●" else "○"
+                    textSize = 12f
+                    setTextColor(getColor(R.color.primary))
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    params.marginEnd = 8
+                    layoutParams = params
+                }
+                dotsContainerHistorical.addView(dot)
+            }
+        }
+
+        private fun updateHistoricalDots(selected: Int) {
+            for (i in 0 until dotsContainerHistorical.childCount) {
+                val dot = dotsContainerHistorical.getChildAt(i) as TextView
+                dot.text = if (i == selected) "●" else "○"
+                dot.alpha = if (i == selected) 1f else 0.4f
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+
+        private fun setGreeting() {
+            val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+            tvGreeting.text = when {
+                hour < 12 -> "¡Buenos días! 🌅"
+                hour < 18 -> "¡Buenas tardes! ☀️"
+                else -> "¡Buenas noches! 🌙"
+            }
+            val sdf = SimpleDateFormat("EEEE, d 'de' MMMM", Locale("es", "AR"))
+            tvDate.text = sdf.format(Date()).replaceFirstChar { it.uppercase() }
+        }
+
+        private fun classifyBloodPressure(sys: Int, dia: Int): Pair<String, Int> {
+            return when {
+                sys < 120 && dia < 80 -> Pair("Normal ✓", R.color.green_status)
+                sys < 130 && dia < 80 -> Pair("Elevada ⚠️", R.color.yellow_status)
+                sys < 140 || dia < 90 -> Pair("Alta Grado 1 ⚠️", R.color.orange_status)
+                else -> Pair("Alta Grado 2 ⛔", R.color.red_status)
+            }
+        }
+
+        private fun setupNavigation() {
+            val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+            NavigationBuilder.setup(bottomNav, this, Module.HOME)
         }
     }
-
-    private fun updateHistoricalDots(selected: Int) {
-        for (i in 0 until dotsContainerHistorical.childCount) {
-            val dot = dotsContainerHistorical.getChildAt(i) as TextView
-            dot.text = if (i == selected) "●" else "○"
-            dot.alpha = if (i == selected) 1f else 0.4f
-        }
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private fun setGreeting() {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        tvGreeting.text = when {
-            hour < 12 -> "¡Buenos días! 🌅"
-            hour < 18 -> "¡Buenas tardes! ☀️"
-            else -> "¡Buenas noches! 🌙"
-        }
-        val sdf = SimpleDateFormat("EEEE, d 'de' MMMM", Locale("es", "AR"))
-        tvDate.text = sdf.format(Date()).replaceFirstChar { it.uppercase() }
-    }
-
-    private fun classifyBloodPressure(sys: Int, dia: Int): Pair<String, Int> {
-        return when {
-            sys < 120 && dia < 80 -> Pair("Normal ✓", R.color.green_status)
-            sys < 130 && dia < 80 -> Pair("Elevada ⚠️", R.color.yellow_status)
-            sys < 140 || dia < 90 -> Pair("Alta Grado 1 ⚠️", R.color.orange_status)
-            else -> Pair("Alta Grado 2 ⛔", R.color.red_status)
-        }
-    }
-
-    private fun setupNavigation() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        NavigationBuilder.setup(bottomNav, this, Module.HOME)
-    }
-}
 
 // ── Data class ────────────────────────────────────────────────────────────────
 
-data class DashboardCard(
-    val icon: String,
-    val title: String,
-    val main: String,
-    val mainSuffix: String,
-    val sub: String,
-    val detail: String,
-    val onClick: () -> Unit
-)
+    data class DashboardCard(
+        val icon: String,
+        val title: String,
+        val main: String,
+        val mainSuffix: String,
+        val sub: String,
+        val detail: String,
+        val onClick: () -> Unit
+    )
 
 // ── Adapter ───────────────────────────────────────────────────────────────────
 
-class DashboardCardAdapter(
-    private val cards: List<DashboardCard>
-) : RecyclerView.Adapter<DashboardCardAdapter.CardViewHolder>() {
+    class DashboardCardAdapter(
+        private val cards: List<DashboardCard>
+    ) : RecyclerView.Adapter<DashboardCardAdapter.CardViewHolder>() {
 
-    class CardViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val card: MaterialCardView = view as MaterialCardView
-        val tvIcon: TextView = view.findViewById(R.id.tvCardIcon)
-        val tvTitle: TextView = view.findViewById(R.id.tvCardTitle)
-        val tvMain: TextView = view.findViewById(R.id.tvCardMain)
-        val tvSub: TextView = view.findViewById(R.id.tvCardSub)
-        val tvDetail: TextView = view.findViewById(R.id.tvCardDetail)
+        class CardViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val card: MaterialCardView = view as MaterialCardView
+            val tvIcon: TextView = view.findViewById(R.id.tvCardIcon)
+            val tvTitle: TextView = view.findViewById(R.id.tvCardTitle)
+            val tvMain: TextView = view.findViewById(R.id.tvCardMain)
+            val tvSub: TextView = view.findViewById(R.id.tvCardSub)
+            val tvDetail: TextView = view.findViewById(R.id.tvCardDetail)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CardViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_dashboard_card, parent, false)
+            return CardViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: CardViewHolder, position: Int) {
+            val c = cards[position]
+            holder.tvIcon.text = c.icon
+            holder.tvTitle.text = c.title
+            holder.tvMain.text = "${c.main}${c.mainSuffix}"
+            holder.tvSub.text = c.sub
+            holder.tvDetail.text = c.detail
+            holder.card.setOnClickListener { c.onClick() }
+        }
+
+        override fun getItemCount() = cards.size
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CardViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_dashboard_card, parent, false)
-        return CardViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: CardViewHolder, position: Int) {
-        val c = cards[position]
-        holder.tvIcon.text = c.icon
-        holder.tvTitle.text = c.title
-        holder.tvMain.text = "${c.main}${c.mainSuffix}"
-        holder.tvSub.text = c.sub
-        holder.tvDetail.text = c.detail
-        holder.card.setOnClickListener { c.onClick() }
-    }
-
-    override fun getItemCount() = cards.size
-}

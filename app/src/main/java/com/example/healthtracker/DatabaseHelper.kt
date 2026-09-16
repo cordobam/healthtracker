@@ -517,6 +517,51 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.close()
         return count
     }
+
+    // ─── Habits Stats ──────────────────────────────────────────────────────────
+
+    fun getHabitCompletionWeek(): Pair<Int, Int> {
+        val db = readableDatabase
+        val totalActiveHabits = getActiveHabits().size
+        if (totalActiveHabits == 0) return Pair(0, 7)
+
+        val threshold = totalActiveHabits / 2.0
+        val cursor = db.rawQuery("""
+            SELECT COUNT(*) FROM (
+                SELECT $HL_DATE, SUM($HL_COMPLETED) as done
+                FROM $TABLE_HABIT_LOGS
+                WHERE $HL_DATE >= date('now', '-6 days') AND $HL_DATE <= date('now')
+                GROUP BY $HL_DATE
+                HAVING done >= $threshold
+            )
+        """, null)
+        val diasOk = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        return Pair(diasOk, 7)
+    }
+
+    fun getHabitCompletionMonth(): Pair<Int, Int> {
+        val db = readableDatabase
+        val totalActiveHabits = getActiveHabits().size
+        if (totalActiveHabits == 0) return Pair(0, 0)
+
+        val threshold = totalActiveHabits / 2.0
+        val cal = Calendar.getInstance()
+        val totalDias = cal.get(Calendar.DAY_OF_MONTH)
+
+        val cursor = db.rawQuery("""
+            SELECT COUNT(*) FROM (
+                SELECT $HL_DATE, SUM($HL_COMPLETED) as done
+                FROM $TABLE_HABIT_LOGS
+                WHERE $HL_DATE >= date('now', 'start of month') AND $HL_DATE <= date('now')
+                GROUP BY $HL_DATE
+                HAVING done >= $threshold
+            )
+        """, null)
+        val diasOk = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        return Pair(diasOk, totalDias)
+    }
 }
 
 // ─── Data Classes ─────────────────────────────────────────────────────────────
