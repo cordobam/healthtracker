@@ -15,6 +15,7 @@
         <activity android:name=".WeightActivity" />
         <activity android:name=".FoodActivity" />
         <activity android:name=".HabitsActivity" />
+        <activity android:name=".WorkoutActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

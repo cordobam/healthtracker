@@ -12,7 +12,8 @@ enum class Module(
     BP(2, "Presión", android.R.drawable.ic_menu_compass, BloodPressureActivity::class.java),
     WEIGHT(3, "Peso", android.R.drawable.ic_menu_sort_by_size, WeightActivity::class.java),
     FOOD(4, "Comidas", android.R.drawable.ic_menu_agenda, FoodActivity::class.java),
-    HABITS(5, "Rutina", android.R.drawable.ic_menu_my_calendar, HabitsActivity::class.java);
+    HABITS(5, "Rutina", android.R.drawable.ic_menu_my_calendar, HabitsActivity::class.java),
+    WORKOUT(6, "Entrenamiento", android.R.drawable.ic_menu_manage, WorkoutActivity::class.java);
 
     companion object {
         const val NAV_MORE = 999
