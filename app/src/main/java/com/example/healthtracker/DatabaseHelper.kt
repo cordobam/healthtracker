@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "health_tracker.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
 
         // Blood Pressure Table
         const val TABLE_BLOOD_PRESSURE = "blood_pressure"
@@ -47,6 +47,23 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val HL_HABIT_ID = "habit_id"
         const val HL_DATE = "date"
         const val HL_COMPLETED = "completed"
+
+        // Workout Tables
+        const val TABLE_WORKOUTS = "entrenamientos"
+        const val WK_ID = "id"
+        const val WK_NAME = "nombre"
+        const val WK_LEVEL = "nivel"
+        const val WK_DESC = "descripcion"
+        const val WK_ORDER = "orden"
+
+        const val TABLE_WORKOUT_EXERCISES = "entrenamiento_ejercicios"
+        const val WE_ID = "id"
+        const val WE_WORKOUT_ID = "entrenamiento_id"
+        const val WE_NAME = "nombre"
+        const val WE_SETS = "series"
+        const val WE_REPS = "reps"
+        const val WE_REST = "descanso"
+        const val WE_ORDER = "orden"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -96,6 +113,89 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 FOREIGN KEY ($HL_HABIT_ID) REFERENCES $TABLE_HABITS($H_ID) ON DELETE CASCADE
             )
         """)
+
+        db.execSQL("""
+            CREATE TABLE $TABLE_WORKOUTS (
+                $WK_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $WK_NAME TEXT NOT NULL,
+                $WK_LEVEL TEXT NOT NULL,
+                $WK_DESC TEXT,
+                $WK_ORDER INTEGER
+            )
+        """)
+
+        db.execSQL("""
+            CREATE TABLE $TABLE_WORKOUT_EXERCISES (
+                $WE_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $WE_WORKOUT_ID INTEGER NOT NULL,
+                $WE_NAME TEXT NOT NULL,
+                $WE_SETS INTEGER DEFAULT 1,
+                $WE_REPS TEXT NOT NULL,
+                $WE_REST INTEGER DEFAULT 60,
+                $WE_ORDER INTEGER,
+                FOREIGN KEY ($WE_WORKOUT_ID) REFERENCES $TABLE_WORKOUTS($WK_ID) ON DELETE CASCADE
+            )
+        """)
+
+        seedWorkoutPlans(db)
+    }
+
+    private fun seedWorkoutPlans(db: SQLiteDatabase) {
+        val plans = listOf(
+            Triple("Inicio", "Principiante", "Entrenamiento de arranque para familiarizarse con el peso corporal."),
+            Triple("Acondicionamiento", "Básico", "Sesiones que aumentan volumen y resistencia básica."),
+            Triple("Fuerza", "Intermedio", "Trabajo de fuerza con variantes más exigentes."),
+            Triple("Dominio", "Avanzado", "Plan avanzado con dominadas, fondos y pistols.")
+        )
+
+        val exercisesByPlan = listOf(
+            listOf(
+                arrayOf("Sentadilla", "3", "10", "60"),
+                arrayOf("Flexión de rodillas", "3", "8", "60"),
+                arrayOf("Plancha frontal", "3", "20s", "45"),
+                arrayOf("Elevación de pantorrillas", "3", "15", "45")
+            ),
+            listOf(
+                arrayOf("Sentadilla", "3", "15", "60"),
+                arrayOf("Flexión estándar", "3", "10", "60"),
+                arrayOf("Plancha frontal", "3", "30s", "45"),
+                arrayOf("Remo invertido", "3", "8", "75")
+            ),
+            listOf(
+                arrayOf("Sentadilla búlgara", "3", "12/pierna", "75"),
+                arrayOf("Flexión diamante", "4", "10", "60"),
+                arrayOf("Plancha lateral", "3", "25s/lado", "45"),
+                arrayOf("Dominada australiana", "4", "8", "90")
+            ),
+            listOf(
+                arrayOf("Sentadilla pistol asistida", "3", "8/pierna", "90"),
+                arrayOf("Dominada", "4", "6", "90"),
+                arrayOf("Fondos en paralelas", "4", "8", "75"),
+                arrayOf("Plancha con elevación de pierna", "3", "30s", "45")
+            )
+        )
+
+        plans.forEachIndexed { planIndex, plan ->
+            val planValues = ContentValues().apply {
+                put(WK_NAME, plan.first)
+                put(WK_LEVEL, plan.second)
+                put(WK_DESC, plan.third)
+                put(WK_ORDER, planIndex + 1)
+            }
+            val planId = db.insert(TABLE_WORKOUTS, null, planValues)
+
+            exercisesByPlan[planIndex].forEachIndexed { exIndex, ex ->
+                val exValues = ContentValues().apply {
+                    put(WE_WORKOUT_ID, planId)
+                    put(WE_NAME, ex[0])
+                    put(WE_SETS, ex[1].toInt())
+                    put(WE_REPS, ex[2])
+                    put(WE_REST, ex[3].toInt())
+                    put(WE_ORDER, exIndex + 1)
+                }
+                db.insert(TABLE_WORKOUT_EXERCISES, null, exValues)
+            }
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -104,6 +204,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.execSQL("DROP TABLE IF EXISTS $TABLE_FOOD")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_HABITS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_HABIT_LOGS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_WORKOUTS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_WORKOUT_EXERCISES")
         onCreate(db)
     }
 
@@ -562,6 +664,47 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.close()
         return Pair(diasOk, totalDias)
     }
+
+    // ─── Workouts ─────────────────────────────────────────────────────────────
+
+    fun getWorkoutPlans(): List<WorkoutPlan> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_WORKOUTS ORDER BY $WK_ORDER ASC", null
+        )
+        val list = mutableListOf<WorkoutPlan>()
+        while (cursor.moveToNext()) {
+            list.add(WorkoutPlan(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(WK_ID)),
+                name = cursor.getString(cursor.getColumnIndexOrThrow(WK_NAME)),
+                level = cursor.getString(cursor.getColumnIndexOrThrow(WK_LEVEL)),
+                description = cursor.getString(cursor.getColumnIndexOrThrow(WK_DESC)),
+                order = cursor.getInt(cursor.getColumnIndexOrThrow(WK_ORDER))
+            ))
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getWorkoutExercises(planId: Int): List<WorkoutExercise> {
+        val cursor = readableDatabase.rawQuery(
+            "SELECT * FROM $TABLE_WORKOUT_EXERCISES WHERE $WE_WORKOUT_ID = ? ORDER BY $WE_ORDER ASC",
+            arrayOf(planId.toString())
+        )
+        val list = mutableListOf<WorkoutExercise>()
+        while (cursor.moveToNext()) {
+            list.add(WorkoutExercise(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(WE_ID)),
+                workoutId = cursor.getInt(cursor.getColumnIndexOrThrow(WE_WORKOUT_ID)),
+                name = cursor.getString(cursor.getColumnIndexOrThrow(WE_NAME)),
+                sets = cursor.getInt(cursor.getColumnIndexOrThrow(WE_SETS)),
+                reps = cursor.getString(cursor.getColumnIndexOrThrow(WE_REPS)),
+                restSeconds = cursor.getInt(cursor.getColumnIndexOrThrow(WE_REST)),
+                order = cursor.getInt(cursor.getColumnIndexOrThrow(WE_ORDER))
+            ))
+        }
+        cursor.close()
+        return list
+    }
 }
 
 // ─── Data Classes ─────────────────────────────────────────────────────────────
@@ -606,4 +749,22 @@ data class WeightAllTimeStats(
     val maxKg: Double,
     val avgKg: Double,
     val count: Int
+)
+
+data class WorkoutPlan(
+    val id: Int,
+    val name: String,
+    val level: String,
+    val description: String,
+    val order: Int
+)
+
+data class WorkoutExercise(
+    val id: Int,
+    val workoutId: Int,
+    val name: String,
+    val sets: Int,
+    val reps: String,
+    val restSeconds: Int,
+    val order: Int
 )
